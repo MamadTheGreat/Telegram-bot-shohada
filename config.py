@@ -1,16 +1,24 @@
 import os
+import json
 
-# توکن ربات تلگرام (از BotFather دریافت کنید)
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+# توکن ربات تلگرام (از متغیر محیطی یا مستقیم)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 
-# مسیر فایل credentials گوگل (JSON)
-GOOGLE_CREDENTIALS_FILE = "credentials.json"
-
-# ID فولدر اصلی در Google Drive که فولدرهای بیماری‌ها در آن هستند
-MAIN_FOLDER_ID = "YOUR_MAIN_FOLDER_ID"
+# ID فولدر اصلی در Google Drive
+MAIN_FOLDER_ID = os.getenv("MAIN_FOLDER_ID", "YOUR_MAIN_FOLDER_ID")
 
 # ID گوگل شیت برای ذخیره اطلاعات کاربران
-GOOGLE_SHEET_ID = "YOUR_GOOGLE_SHEET_ID"
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "YOUR_GOOGLE_SHEET_ID")
+
+# مسیر فایل credentials گوگل (JSON)
+# در Render از متغیر محیطی استفاده می‌کنیم
+GOOGLE_CREDENTIALS_FILE = "credentials.json"
+
+# اگر در Render هستیم، credentials را از متغیر محیطی بخوانیم
+if os.getenv("GOOGLE_CREDENTIALS_JSON"):
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    with open(GOOGLE_CREDENTIALS_FILE, "w") as f:
+        f.write(credentials_json)
 
 # نام شیت‌ها در گوگل شیت
 USER_DATA_SHEET = "کاربران"
