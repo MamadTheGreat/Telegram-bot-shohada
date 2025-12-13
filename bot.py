@@ -1,50 +1,41 @@
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-)
-
-from config import TELEGRAM_BOT_TOKEN, WEBHOOK_URL, PORT
-from menus import main_menu
-from education import education_entry, diabetes_education
-from symptoms import symptoms_entry, symptoms_input
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "به ربات شهداء خوش آمدید 🌱",
-        reply_markup=main_menu()
-    )
-
-async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(
-        text="منوی اصلی:",
-        reply_markup=main_menu()
-    )
+import os
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from config import BOT_TOKEN
+from handlers.start_handler import start_command
+from handlers.menu_handler import handle_menu_selection
+from handlers.education_handler import handle_education_menu, handle_disease_selection
+from handlers.symptoms_handler import handle_symptoms_menu
 
 def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    """راه‌اندازی ربات تلگرام"""
+    
+    # ساخت Application
+    application = Application.builder().token(BOT_TOKEN).build()
+    
+    # اضافه کردن هندلرها
+    application.add_handler(CommandHandler("start", start_command))
+    
+    # هندلر برای منوی اصلی
+    application.add_handler(MessageHandler(
+        filters.Regex('^(آموزش|ثبت علائم|ارتباط با کارشناس)$'), 
+        handle_menu_selection
+    ))
+    
+    # هندلر برای منوی آموزش
+    application.add_handler(MessageHandler(
+        filters.Regex('^(دیابت نوع ۲|فشار خون|بیماری قلبی عروقی)$'),
+        handle_disease_selection
+    ))
+    
+    # هندلر برای بازگشت به منوی اصلی
+    application.add_handler(MessageHandler(
+        filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'),
+        start_command
+    ))
+    
+    # شروع ربات
+    print("ربات در حال اجرا است...")
+    application.run_polling(allowed_updates=["message"])
 
-    app.add_handler(CommandHandler("start", start))
-
-    app.add_handler(CallbackQueryHandler(education_entry, pattern="^education$"))
-    app.add_handler(CallbackQueryHandler(diabetes_education, pattern="^edu_diabetes$"))
-
-    app.add_handler(CallbackQueryHandler(symptoms_entry, pattern="^symptoms$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, symptoms_input))
-
-    app.add_handler(CallbackQueryHandler(main_menu_handler, pattern="^back_main$"))
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL
-    )
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
