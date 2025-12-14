@@ -54,26 +54,56 @@ async def handle_disease_selection(update: Update, context: ContextTypes.DEFAULT
         
         # ارسال پیام توضیحات
         await update.message.reply_text(
-            f"✅ {len(videos)} ویدیوی آموزشی برای {disease_name} پیدا شد.\n"
+            f"✅ {len(videos)} فایل آموزشی برای {disease_name} پیدا شد.\n"
             f"در حال ارسال..."
         )
         
         # ارسال هر ویدیو
         for idx, video in enumerate(videos, 1):
             try:
-                await update.message.reply_video(
-                    video=video['url'],
-                    caption=f"📹 {video['name']}\n\n{idx}/{len(videos)}"
-                )
+                # بررسی حجم فایل (تلگرام محدودیت 50MB داره)
+                file_size_mb = int(video.get('size', 0)) / (1024 * 1024)
+                
+                if file_size_mb > 50:
+                    # اگه فایل بزرگ‌تره از 50MB، لینک بفرست
+                    await update.message.reply_text(
+                        f"📹 {video['name']}\n"
+                        f"📊 حجم: {file_size_mb:.1f} MB\n\n"
+                        f"⚠️ این فایل بزرگ‌تر از 50MB است و نمی‌تواند مستقیماً ارسال شود.\n\n"
+                        f"🔗 لینک دانلود:\n{video['web_link']}\n\n"
+                        f"{idx}/{len(videos)}"
+                    )
+                else:
+                    # تلاش برای ارسال به عنوان ویدیو
+                    try:
+                        await update.message.reply_video(
+                            video=video['url'],
+                            caption=f"📹 {video['name']}\n\n{idx}/{len(videos)}",
+                            read_timeout=60,
+                            write_timeout=60,
+                            connect_timeout=60
+                        )
+                    except Exception as video_error:
+                        # اگه ارسال به عنوان ویدیو نشد، لینک بفرست
+                        print(f"خطا در ارسال ویدیو {video['name']}: {video_error}")
+                        await update.message.reply_text(
+                            f"📹 {video['name']}\n"
+                            f"📊 حجم: {file_size_mb:.1f} MB\n\n"
+                            f"⚠️ متأسفانه ارسال مستقیم امکان‌پذیر نبود.\n\n"
+                            f"🔗 لینک دانلود:\n{video['web_link']}\n\n"
+                            f"💡 روی لینک کلیک کنید تا فایل دانلود شود.\n\n"
+                            f"{idx}/{len(videos)}"
+                        )
+                        
             except Exception as e:
-                print(f"خطا در ارسال ویدیو {video['name']}: {e}")
+                print(f"خطا در پردازش فایل {video['name']}: {e}")
                 await update.message.reply_text(
-                    f"❌ خطا در ارسال ویدیو: {video['name']}"
+                    f"❌ خطا در ارسال: {video['name']}"
                 )
         
         # پیام پایانی
         await update.message.reply_text(
-            f"✅ همه ویدیوهای آموزشی {disease_name} ارسال شدند.\n\n"
+            f"✅ همه فایل‌های آموزشی {disease_name} ارسال شدند.\n\n"
             "آیا موضوع دیگری می‌خواهید یاد بگیرید؟",
             reply_markup=get_education_menu_keyboard()
         )
