@@ -92,11 +92,13 @@ async def get_videos_from_folder(folder_name):
             # ساخت لینک دانلود مستقیم
             file_id = item['id']
             download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            web_link = f"https://drive.google.com/file/d/{file_id}/view"
             
             videos.append({
                 'id': file_id,
                 'name': item['name'],
                 'url': download_url,
+                'web_link': web_link,
                 'mime_type': item.get('mimeType', 'video/mp4'),
                 'size': item.get('size', 0)
             })
