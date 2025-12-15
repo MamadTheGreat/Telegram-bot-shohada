@@ -4,7 +4,10 @@ from datetime import datetime
 from config import GOOGLE_CREDENTIALS_FILE, GOOGLE_SHEET_ID, USER_DATA_SHEET, SYMPTOMS_SHEET
 
 # Scopes مورد نیاز برای دسترسی به Google Sheets
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
 
 def get_sheets_service():
     """ایجاد سرویس Google Sheets"""
