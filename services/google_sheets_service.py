@@ -1,6 +1,7 @@
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from datetime import datetime
+import jdatetime
 from config import GOOGLE_CREDENTIALS_FILE, GOOGLE_SHEET_ID, USER_DATA_SHEET, SYMPTOMS_SHEET
 
 # Scopes مورد نیاز برای دسترسی به Google Sheets
@@ -200,8 +201,10 @@ async def save_symptom(user_id, username, symptom_type, value):
             return False
         
         # ثبت علامت جدید
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        current_time = datetime.now().strftime('%H:%M:%S')
+        now = datetime.now()
+        jd = jdatetime.datetime.fromgregorian(datetime=now)
+        current_date = jd.strftime('%Y-%m-%d')  # تاریخ شمسی
+        current_time = now.strftime('%H:%M:%S')  # ساعت و دقیقه و ثانیه
         
         new_row = [[current_date, current_time, symptom_type, value]]
         
