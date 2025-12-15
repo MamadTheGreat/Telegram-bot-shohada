@@ -145,3 +145,122 @@ async def log_symptom(user_id, username, symptom_data):
     except Exception as e:
         print(f"خطا در ثبت علائم: {e}")
         return False
+
+async def save_symptom(user_id, username, symptom_type, value):
+    """
+    ذخیره علامت در تب مخصوص کاربر
+    
+    Args:
+        user_id: شناسه کاربر
+        username: نام کاربری
+        symptom_type: نوع علامت (قند ناشتا، فشار خون، وزن)
+        value: مقدار علامت
+    """
+    try:
+        service = get_sheets_service()
+        sheet = service.spreadsheets()
+        
+        # نام تب برای کاربر
+        user_sheet_name = f"User_{user_id}"
+        
+        # بررسی وجود تب کاربر
+        try:
+            sheet_metadata = sheet.get(spreadsheetId=GOOGLE_SHEET_ID).execute()
+            sheets = sheet_metadata.get('sheets', [])
+            sheet_exists = any(s['properties']['title'] == user_sheet_name for s in sheets)
+            
+            if not sheet_exists:
+                # ساخت تب جدید
+                requests = [{
+                    'addSheet': {
+                        'properties': {
+                            'title': user_sheet_name
+                        }
+                    }
+                }]
+                sheet.batchUpdate(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    body={'requests': requests}
+                ).execute()
+                
+                # اضافه کردن هدر
+                header = [['تاریخ', 'ساعت', 'نوع علامت', 'مقدار']]
+                sheet.values().update(
+                    spreadsheetId=GOOGLE_SHEET_ID,
+                    range=f'{user_sheet_name}!A1:D1',
+                    valueInputOption='RAW',
+                    body={'values': header}
+                ).execute()
+        
+        except Exception as e:
+            print(f"خطا در بررسی/ساخت تب: {e}")
+            return False
+        
+        # ثبت علامت جدید
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        current_time = datetime.now().strftime('%H:%M:%S')
+        
+        new_row = [[current_date, current_time, symptom_type, value]]
+        
+        sheet.values().append(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range=f'{user_sheet_name}!A:D',
+            valueInputOption='RAW',
+            body={'values': new_row}
+        ).execute()
+        
+        return True
+        
+    except Exception as e:
+        print(f"خطا در ذخیره علامت: {e}")
+        return False
+
+async def get_user_symptoms(user_id, symptom_filter=None):
+    """
+    دریافت علائم کاربر از گوگل شیت
+    
+    Args:
+        user_id: شناسه کاربر
+        symptom_filter: فیلتر نوع علامت (مثلاً "قند" برای همه انواع قند خون)
+    
+    Returns:
+        لیستی از دیکشنری‌های حاوی داده‌های علامت
+    """
+    try:
+        service = get_sheets_service()
+        sheet = service.spreadsheets()
+        
+        user_sheet_name = f"User_{user_id}"
+        
+        # دریافت همه داده‌ها
+        result = sheet.values().get(
+            spreadsheetId=GOOGLE_SHEET_ID,
+            range=f'{user_sheet_name}!A2:D'  # از ردیف 2 شروع (بعد از هدر)
+        ).execute()
+        
+        rows = result.get('values', [])
+        
+        if not rows:
+            return []
+        
+        data = []
+        for row in rows:
+            if len(row) >= 4:
+                symptom_type = row[2]
+                
+                # اعمال فیلتر
+                if symptom_filter and symptom_filter not in symptom_type:
+                    continue
+                
+                data.append({
+                    'date': row[0],
+                    'time': row[1],
+                    'type': symptom_type,
+                    'value': row[3]
+                })
+        
+        return data
+        
+    except Exception as e:
+        print(f"خطا در دریافت علائم: {e}")
+        return []
