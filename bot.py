@@ -1,12 +1,22 @@
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 from config import BOT_TOKEN
 from handlers.start_handler import start_command
 from handlers.menu_handler import handle_menu_selection
 from handlers.education_handler import handle_education_menu, handle_disease_selection
-from handlers.symptoms_handler import handle_symptoms_menu
+from handlers.symptoms_handler import (
+    handle_symptoms_menu, handle_blood_sugar_menu,
+    ask_fasting_blood_sugar, ask_after_meal_blood_sugar, save_blood_sugar,
+    ask_blood_pressure_systolic, ask_blood_pressure_diastolic, save_blood_pressure,
+    ask_weight, save_weight,
+    show_history_menu, send_blood_sugar_chart, send_blood_pressure_chart, send_weight_chart,
+    cancel,
+    CHOOSING_SYMPTOM, ENTERING_BLOOD_SUGAR_FASTING, ENTERING_BLOOD_SUGAR_AFTER_MEAL,
+    ENTERING_BLOOD_PRESSURE_SYSTOLIC, ENTERING_BLOOD_PRESSURE_DIASTOLIC,
+    ENTERING_WEIGHT, VIEWING_HISTORY
+)
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     """یک HTTP handler ساده برای health check"""
@@ -37,12 +47,56 @@ def main():
     # ساخت Application
     application = Application.builder().token(BOT_TOKEN).build()
     
+    # Conversation Handler برای ثبت علائم
+    symptoms_conv_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(filters.Regex('^ثبت علائم$'), handle_symptoms_menu)
+        ],
+        states={
+            CHOOSING_SYMPTOM: [
+                MessageHandler(filters.Regex('^قند خون$'), handle_blood_sugar_menu),
+                MessageHandler(filters.Regex('^قند خون ناشتا$'), ask_fasting_blood_sugar),
+                MessageHandler(filters.Regex('^قند خون بعد از غذا$'), ask_after_meal_blood_sugar),
+                MessageHandler(filters.Regex('^فشار خون$'), ask_blood_pressure_systolic),
+                MessageHandler(filters.Regex('^وزن$'), ask_weight),
+                MessageHandler(filters.Regex('^📊 تاریخچه علائم$'), show_history_menu),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
+            ],
+            ENTERING_BLOOD_SUGAR_FASTING: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
+            ],
+            ENTERING_BLOOD_SUGAR_AFTER_MEAL: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
+            ],
+            ENTERING_BLOOD_PRESSURE_SYSTOLIC: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, ask_blood_pressure_diastolic)
+            ],
+            ENTERING_BLOOD_PRESSURE_DIASTOLIC: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_pressure)
+            ],
+            ENTERING_WEIGHT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_weight)
+            ],
+            VIEWING_HISTORY: [
+                MessageHandler(filters.Regex('^📊 نمودار قند خون$'), send_blood_sugar_chart),
+                MessageHandler(filters.Regex('^📊 نمودار فشار خون$'), send_blood_pressure_chart),
+                MessageHandler(filters.Regex('^📊 نمودار وزن$'), send_weight_chart),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
+            ],
+        },
+        fallbacks=[
+            MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+            CommandHandler('cancel', cancel)
+        ]
+    )
+    
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(symptoms_conv_handler)
     
-    # هندلر برای منوی اصلی
+    # هندلر برای منوی اصلی (به جز ثبت علائم که در conversation handler هست)
     application.add_handler(MessageHandler(
-        filters.Regex('^(آموزش|ثبت علائم|ارتباط با کارشناس)$'), 
+        filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
         handle_menu_selection
     ))
     
