@@ -1,8 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from keyboards import get_education_menu_keyboard, get_back_keyboard
-from services.google_drive_service import get_videos_from_folder
+from services.google_drive_service import get_videos_from_folder, download_file_from_drive
 from config import DISEASE_FOLDERS
+import os
 
 async def handle_education_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """نمایش منوی آموزش"""
@@ -62,43 +63,56 @@ async def handle_disease_selection(update: Update, context: ContextTypes.DEFAULT
         for idx, video in enumerate(videos, 1):
             try:
                 # بررسی حجم فایل (تلگرام محدودیت 50MB داره)
-                file_size_mb = int(video.get('size', 0)) / (1024 * 1024)
+                file_size_mb = video.get('size', 0) / (1024 * 1024)
                 
                 if file_size_mb > 50:
                     # اگه فایل بزرگ‌تره از 50MB، لینک بفرست
+                    web_link = f"https://drive.google.com/file/d/{video['id']}/view"
                     await update.message.reply_text(
                         f"📹 {video['name']}\n"
                         f"📊 حجم: {file_size_mb:.1f} MB\n\n"
                         f"⚠️ این فایل بزرگ‌تر از 50MB است و نمی‌تواند مستقیماً ارسال شود.\n\n"
-                        f"🔗 لینک دانلود:\n{video['web_link']}\n\n"
+                        f"🔗 لینک دانلود:\n{web_link}\n\n"
                         f"{idx}/{len(videos)}"
                     )
                 else:
-                    # تلاش برای ارسال به عنوان ویدیو
-                    try:
-                        await update.message.reply_video(
-                            video=video['url'],
-                            caption=f"📹 {video['name']}\n\n{idx}/{len(videos)}",
-                            read_timeout=60,
-                            write_timeout=60,
-                            connect_timeout=60
-                        )
-                    except Exception as video_error:
-                        # اگه ارسال به عنوان ویدیو نشد، لینک بفرست
-                        print(f"خطا در ارسال ویدیو {video['name']}: {video_error}")
+                    # دانلود فایل از Google Drive
+                    await update.message.reply_text(
+                        f"⏳ در حال دانلود {video['name']}..."
+                    )
+                    
+                    file_path = await download_file_from_drive(video['id'], video['name'])
+                    
+                    if file_path and os.path.exists(file_path):
+                        # ارسال فایل
+                        with open(file_path, 'rb') as video_file:
+                            await update.message.reply_video(
+                                video=video_file,
+                                caption=f"📹 {video['name']}\n\n{idx}/{len(videos)}",
+                                read_timeout=120,
+                                write_timeout=120,
+                                connect_timeout=60,
+                                supports_streaming=True
+                            )
+                        
+                        # حذف فایل موقت
+                        os.remove(file_path)
+                    else:
+                        # اگه دانلود نشد، لینک بفرست
+                        web_link = f"https://drive.google.com/file/d/{video['id']}/view"
                         await update.message.reply_text(
-                            f"📹 {video['name']}\n"
-                            f"📊 حجم: {file_size_mb:.1f} MB\n\n"
-                            f"⚠️ متأسفانه ارسال مستقیم امکان‌پذیر نبود.\n\n"
-                            f"🔗 لینک دانلود:\n{video['web_link']}\n\n"
-                            f"💡 روی لینک کلیک کنید تا فایل دانلود شود.\n\n"
+                            f"📹 {video['name']}\n\n"
+                            f"⚠️ متأسفانه دانلود امکان‌پذیر نبود.\n\n"
+                            f"🔗 لینک مشاهده:\n{web_link}\n\n"
                             f"{idx}/{len(videos)}"
                         )
                         
             except Exception as e:
                 print(f"خطا در پردازش فایل {video['name']}: {e}")
+                web_link = f"https://drive.google.com/file/d/{video['id']}/view"
                 await update.message.reply_text(
-                    f"❌ خطا در ارسال: {video['name']}"
+                    f"❌ خطا در ارسال: {video['name']}\n\n"
+                    f"🔗 لینک مشاهده:\n{web_link}"
                 )
         
         # پیام پایانی
