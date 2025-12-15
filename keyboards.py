@@ -37,3 +37,45 @@ def get_back_keyboard():
         resize_keyboard=True,
         one_time_keyboard=False
     )
+
+def get_symptoms_menu_keyboard():
+    """کیبورد منوی ثبت علائم"""
+    keyboard = [
+        [KeyboardButton("قند خون")],
+        [KeyboardButton("فشار خون")],
+        [KeyboardButton("وزن")],
+        [KeyboardButton("📊 تاریخچه علائم")],
+        [KeyboardButton("🔙 بازگشت")]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+def get_blood_sugar_menu_keyboard():
+    """کیبورد منوی قند خون"""
+    keyboard = [
+        [KeyboardButton("قند خون ناشتا")],
+        [KeyboardButton("قند خون بعد از غذا")],
+        [KeyboardButton("🔙 بازگشت")]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+def get_history_menu_keyboard():
+    """کیبورد منوی تاریخچه"""
+    keyboard = [
+        [KeyboardButton("📊 نمودار قند خون")],
+        [KeyboardButton("📊 نمودار فشار خون")],
+        [KeyboardButton("📊 نمودار وزن")],
+        [KeyboardButton("🔙 بازگشت")]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
