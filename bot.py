@@ -63,18 +63,23 @@ def main():
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
             ],
             ENTERING_BLOOD_SUGAR_FASTING: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_SUGAR_AFTER_MEAL: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_PRESSURE_SYSTOLIC: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, ask_blood_pressure_diastolic)
             ],
             ENTERING_BLOOD_PRESSURE_DIASTOLIC: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_pressure)
             ],
             ENTERING_WEIGHT: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_weight)
             ],
             VIEWING_HISTORY: [
