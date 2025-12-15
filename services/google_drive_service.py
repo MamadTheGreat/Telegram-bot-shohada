@@ -1,6 +1,9 @@
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 from config import GOOGLE_CREDENTIALS_FILE, MAIN_FOLDER_ID
+import io
+import os
 
 # Scopes مورد نیاز برای دسترسی به Google Drive
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -89,18 +92,13 @@ async def get_videos_from_folder(folder_name):
         
         videos = []
         for item in items:
-            # ساخت لینک دانلود مستقیم
             file_id = item['id']
-            download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-            web_link = f"https://drive.google.com/file/d/{file_id}/view"
             
             videos.append({
                 'id': file_id,
                 'name': item['name'],
-                'url': download_url,
-                'web_link': web_link,
                 'mime_type': item.get('mimeType', 'video/mp4'),
-                'size': item.get('size', 0)
+                'size': int(item.get('size', 0))
             })
         
         return videos
@@ -135,3 +133,37 @@ def make_file_public(file_id):
     except Exception as e:
         print(f"خطا در عمومی کردن فایل: {e}")
         return False
+
+async def download_file_from_drive(file_id, file_name):
+    """
+    دانلود فایل از Google Drive
+    
+    Args:
+        file_id: ID فایل در Google Drive
+        file_name: نام فایل
+    
+    Returns:
+        مسیر فایل دانلود شده
+    """
+    try:
+        service = get_drive_service()
+        
+        # دانلود فایل
+        request = service.files().get_media(fileId=file_id)
+        
+        # ذخیره در /tmp
+        file_path = os.path.join('/tmp', file_name)
+        
+        with io.FileIO(file_path, 'wb') as fh:
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+                if status:
+                    print(f"دانلود {int(status.progress() * 100)}% انجام شد.")
+        
+        return file_path
+        
+    except Exception as e:
+        print(f"خطا در دانلود فایل: {e}")
+        return None
