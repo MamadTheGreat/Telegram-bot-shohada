@@ -33,12 +33,33 @@ async def generate_chart(data, title, unit):
         for item in data:
             # ترکیب تاریخ و ساعت
             datetime_str = f"{item['date']} {item['time']}"
-            dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
-            dates.append(dt)
             
-            # تبدیل به شمسی
-            jd = jdatetime.datetime.fromgregorian(datetime=dt)
-            shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
+            # تشخیص فرمت تاریخ (شمسی یا میلادی)
+            try:
+                # اگر تاریخ شمسی باشه (فرمت جدید)
+                date_parts = item['date'].split('-')
+                if len(date_parts) == 3:
+                    year, month, day = map(int, date_parts)
+                    # اگه سال بیشتر از 1500 باشه، شمسیه
+                    if year > 1500:
+                        # تاریخ شمسی هست
+                        jd = jdatetime.datetime(year, month, day)
+                        time_parts = item['time'].split(':')
+                        jd = jd.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=int(time_parts[2]))
+                        dt = jd.togregorian()
+                        shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
+                    else:
+                        # تاریخ میلادی هست (داده‌های قدیمی)
+                        dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+                        jd = jdatetime.datetime.fromgregorian(datetime=dt)
+                        shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
+            except:
+                # اگه مشکلی پیش اومد، به روش قدیمی تبدیل کن
+                dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+                jd = jdatetime.datetime.fromgregorian(datetime=dt)
+                shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
+            
+            dates.append(dt)
             shamsi_dates.append(shamsi_str)
             
             # نوع علامت (برای قند خون)
