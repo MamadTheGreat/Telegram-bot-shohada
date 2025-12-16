@@ -397,7 +397,10 @@ async def send_weight_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     return VIEWING_HISTORY
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_back_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """هندلر دکمه بازگشت - برگشت به منوی ثبت علائم"""
+    context.user_data['in_symptoms_menu'] = True
+    return await handle_symptoms_menu(update, context)
     """لغو عملیات"""
     from keyboards import get_main_menu_keyboard
     
