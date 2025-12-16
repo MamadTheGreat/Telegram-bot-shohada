@@ -31,39 +31,38 @@ async def generate_chart(data, title, unit):
         types = []  # برای قند خون: ناشتا یا بعد از غذا
         
         for item in data:
-            # ترکیب تاریخ و ساعت
-            datetime_str = f"{item['date']} {item['time']}"
+            # نوع علامت (برای قند خون)
+            types.append(item.get('type', ''))
             
-            # تشخیص فرمت تاریخ (شمسی یا میلادی)
+            # تاریخ و ساعت
+            date_str = item['date']
+            time_str = item['time']
+            
+            # تبدیل تاریخ شمسی به datetime برای نمودار
             try:
-                # اگر تاریخ شمسی باشه (فرمت جدید)
-                date_parts = item['date'].split('-')
-                if len(date_parts) == 3:
-                    year, month, day = map(int, date_parts)
-                    # اگه سال بیشتر از 1500 باشه، شمسیه
-                    if year > 1500:
-                        # تاریخ شمسی هست
-                        jd = jdatetime.datetime(year, month, day)
-                        time_parts = item['time'].split(':')
-                        jd = jd.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=int(time_parts[2]))
-                        dt = jd.togregorian()
-                        shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
-                    else:
-                        # تاریخ میلادی هست (داده‌های قدیمی)
-                        dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
-                        jd = jdatetime.datetime.fromgregorian(datetime=dt)
-                        shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
-            except:
-                # اگه مشکلی پیش اومد، به روش قدیمی تبدیل کن
-                dt = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
-                jd = jdatetime.datetime.fromgregorian(datetime=dt)
-                shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
+                # تاریخ به فرمت YYYY-MM-DD شمسی هست
+                date_parts = date_str.split('-')
+                year, month, day = map(int, date_parts)
+                
+                # ساخت datetime شمسی
+                jd = jdatetime.datetime(year, month, day)
+                time_parts = time_str.split(':')
+                jd = jd.replace(hour=int(time_parts[0]), minute=int(time_parts[1]), second=int(time_parts[2]))
+                
+                # تبدیل به میلادی برای محاسبات
+                dt = jd.togregorian()
+                
+                # فرمت نمایش شمسی
+                shamsi_str = f"{year}/{month:02d}/{day:02d} {time_parts[0]}:{time_parts[1]}"
+                
+            except Exception as e:
+                print(f"خطا در تبدیل تاریخ: {e}")
+                # اگه مشکلی بود، از روش قدیمی استفاده کن
+                dt = datetime.now()
+                shamsi_str = "---"
             
             dates.append(dt)
             shamsi_dates.append(shamsi_str)
-            
-            # نوع علامت (برای قند خون)
-            types.append(item.get('type', ''))
             
             # استخراج مقدار عددی
             value_str = item['value'].split()[0]  # جدا کردن عدد از واحد
