@@ -61,7 +61,7 @@ def main():
                 MessageHandler(filters.Regex('^فشار خون$'), ask_blood_pressure_systolic),
                 MessageHandler(filters.Regex('^وزن$'), ask_weight),
                 MessageHandler(filters.Regex('^📊 تاریخچه علائم$'), show_history_menu),
-                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
             ],
             ENTERING_BLOOD_SUGAR_FASTING: [
                 MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
@@ -92,11 +92,12 @@ def main():
                 MessageHandler(filters.Regex('^📊 نمودار قند خون$'), send_blood_sugar_chart),
                 MessageHandler(filters.Regex('^📊 نمودار فشار خون$'), send_blood_pressure_chart),
                 MessageHandler(filters.Regex('^📊 نمودار وزن$'), send_weight_chart),
-                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
             ],
         },
         fallbacks=[
-            MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+            MessageHandler(filters.Regex('^بازگشت به منوی اصلی$'), start_command),
+            MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
             CommandHandler('cancel', cancel)
         ]
     )
