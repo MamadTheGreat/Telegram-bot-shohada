@@ -112,13 +112,6 @@ async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ask_blood_pressure_systolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون سیستولیک"""
-    # چک کن که از منوی ثبت علائم اومده (نه آموزش)
-    user_data = context.user_data
-    if 'in_symptoms_menu' not in user_data:
-        # اگه از منوی آموزش اومده، به education handler هدایت کن
-        from handlers.education_handler import handle_disease_selection
-        return await handle_disease_selection(update, context)
-    
     await update.message.reply_text(
         "💓 ثبت فشار خون\n\n"
         "لطفاً فشار خون سیستولیک (عدد بزرگ‌تر) را وارد کنید:\n"
