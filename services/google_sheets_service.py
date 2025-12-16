@@ -2,6 +2,7 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from datetime import datetime
 import jdatetime
+import pytz
 from config import GOOGLE_CREDENTIALS_FILE, GOOGLE_SHEET_ID, USER_DATA_SHEET, SYMPTOMS_SHEET
 
 # Scopes مورد نیاز برای دسترسی به Google Sheets
@@ -66,7 +67,9 @@ async def log_user_start(user_id, username, full_name):
                 row_number = idx
                 break
         
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # به‌روزرسانی Last Interaction
+        iran_tz = pytz.timezone('Asia/Tehran')
+        current_time = datetime.now(iran_tz).strftime('%Y-%m-%d %H:%M:%S')
         
         if user_exists:
             # به‌روزرسانی Last Interaction
@@ -125,8 +128,10 @@ async def log_symptom(user_id, username, symptom_data):
             ).execute()
         
         # افزودن علائم جدید
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        current_time = datetime.now().strftime('%H:%M:%S')
+        iran_tz = pytz.timezone('Asia/Tehran')
+        now = datetime.now(iran_tz)
+        current_date = now.strftime('%Y-%m-%d')
+        current_time = now.strftime('%H:%M:%S')
         
         new_row = [[
             user_id,
@@ -200,11 +205,12 @@ async def save_symptom(user_id, username, symptom_type, value):
             print(f"خطا در بررسی/ساخت تب: {e}")
             return False
         
-        # ثبت علامت جدید
-        now = datetime.now()
+        # ثبت علامت جدید با timezone ایران
+        iran_tz = pytz.timezone('Asia/Tehran')
+        now = datetime.now(iran_tz)
         jd = jdatetime.datetime.fromgregorian(datetime=now)
         current_date = jd.strftime('%Y-%m-%d')  # تاریخ شمسی
-        current_time = now.strftime('%H:%M:%S')  # ساعت و دقیقه و ثانیه
+        current_time = now.strftime('%H:%M:%S')  # ساعت و دقیقه و ثانیه به وقت ایران
         
         new_row = [[current_date, current_time, symptom_type, value]]
         
