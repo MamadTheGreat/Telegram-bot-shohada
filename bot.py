@@ -8,7 +8,7 @@ from handlers.menu_handler import handle_menu_selection
 from handlers.education_handler import handle_education_menu, handle_disease_selection
 from handlers.education_router import route_blood_pressure
 from handlers.symptoms_handler import (
-    handle_symptoms_menu, handle_blood_sugar_menu,
+    handle_symptoms_menu, handle_blood_sugar_menu, handle_back_button,
     ask_fasting_blood_sugar, ask_after_meal_blood_sugar, save_blood_sugar,
     ask_blood_pressure_systolic, ask_blood_pressure_diastolic, save_blood_pressure,
     ask_weight, save_weight,
@@ -64,23 +64,28 @@ def main():
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_symptoms_menu),
             ],
             ENTERING_BLOOD_SUGAR_FASTING: [
-                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_SUGAR_AFTER_MEAL: [
-                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_PRESSURE_SYSTOLIC: [
-                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, ask_blood_pressure_diastolic)
             ],
             ENTERING_BLOOD_PRESSURE_DIASTOLIC: [
-                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_pressure)
             ],
             ENTERING_WEIGHT: [
-                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'), handle_symptoms_menu),
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
+                MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_weight)
             ],
             VIEWING_HISTORY: [
