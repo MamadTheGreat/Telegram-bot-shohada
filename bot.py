@@ -97,23 +97,25 @@ def main():
     
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
+    
+    # Conversation Handler برای ثبت علائم - باید قبل از بقیه هندلرها باشه
     application.add_handler(symptoms_conv_handler)
     
-    # هندلر برای منوی اصلی (به جز ثبت علائم که در conversation handler هست)
+    # هندلر برای منوی اصلی (به جز ثبت علائم)
     application.add_handler(MessageHandler(
         filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
         handle_menu_selection
     ))
     
-    # هندلر برای منوی آموزش
+    # هندلر برای منوی آموزش - این فقط برای آموزش هست
     application.add_handler(MessageHandler(
-        filters.Regex('^(دیابت نوع ۲|فشار خون|بیماری قلبی عروقی)$'),
+        filters.Regex('^(دیابت نوع ۲|بیماری قلبی عروقی)$'),
         handle_disease_selection
     ))
     
-    # هندلر برای بازگشت به منوی اصلی
+    # هندلر برای بازگشت به منوی اصلی از آموزش
     application.add_handler(MessageHandler(
-        filters.Regex('^(بازگشت به منوی اصلی|🔙 بازگشت)$'),
+        filters.Regex('^🔙 بازگشت$') & ~filters.Regex('^ثبت علائم$'),
         start_command
     ))
     
