@@ -16,6 +16,9 @@ VIEWING_HISTORY = 7
 
 async def handle_symptoms_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """نمایش منوی ثبت علائم"""
+    # علامت‌گذاری که در منوی ثبت علائم هستیم
+    context.user_data['in_symptoms_menu'] = True
+    
     message = """
 📝 ثبت علائم
 
@@ -109,6 +112,13 @@ async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ask_blood_pressure_systolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون سیستولیک"""
+    # چک کن که از منوی ثبت علائم اومده (نه آموزش)
+    user_data = context.user_data
+    if 'in_symptoms_menu' not in user_data:
+        # اگه از منوی آموزش اومده، به education handler هدایت کن
+        from handlers.education_handler import handle_disease_selection
+        return await handle_disease_selection(update, context)
+    
     await update.message.reply_text(
         "💓 ثبت فشار خون\n\n"
         "لطفاً فشار خون سیستولیک (عدد بزرگ‌تر) را وارد کنید:\n"
@@ -397,6 +407,10 @@ async def send_weight_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """لغو عملیات"""
     from keyboards import get_main_menu_keyboard
+    
+    # پاک کردن user_data
+    context.user_data.clear()
+    
     await update.message.reply_text(
         "عملیات لغو شد.",
         reply_markup=get_main_menu_keyboard()
