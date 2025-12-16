@@ -28,6 +28,7 @@ async def generate_chart(data, title, unit):
         dates = []
         shamsi_dates = []
         values = []
+        types = []  # برای قند خون: ناشتا یا بعد از غذا
         
         for item in data:
             # ترکیب تاریخ و ساعت
@@ -39,6 +40,9 @@ async def generate_chart(data, title, unit):
             jd = jdatetime.datetime.fromgregorian(datetime=dt)
             shamsi_str = jd.strftime('%Y/%m/%d %H:%M')
             shamsi_dates.append(shamsi_str)
+            
+            # نوع علامت (برای قند خون)
+            types.append(item.get('type', ''))
             
             # استخراج مقدار عددی
             value_str = item['value'].split()[0]  # جدا کردن عدد از واحد
@@ -60,22 +64,112 @@ async def generate_chart(data, title, unit):
         english_title = title_translations.get(title, title)
         
         # ساخت نمودار
-        fig, ax = plt.subplots(figsize=(14, 7))
+        fig, ax = plt.subplots(figsize=(14, 8))
         
         if title == "فشار خون" and len(values) > 0 and isinstance(values[0], tuple):
             # نمودار دو خطی برای فشار خون
             systolic_values = [v[0] for v in values]
             diastolic_values = [v[1] for v in values]
             
-            ax.plot(range(len(dates)), systolic_values, marker='o', linestyle='-', 
-                   linewidth=2.5, markersize=7, label='Systolic (Upper)', color='#e74c3c')
-            ax.plot(range(len(dates)), diastolic_values, marker='s', linestyle='-', 
-                   linewidth=2.5, markersize=7, label='Diastolic (Lower)', color='#3498db')
+            # رسم خطوط
+            line1 = ax.plot(range(len(dates)), systolic_values, marker='o', linestyle='-', 
+                   linewidth=2.5, markersize=8, label='Systolic (Upper)', color='#e74c3c')
+            line2 = ax.plot(range(len(dates)), diastolic_values, marker='s', linestyle='-', 
+                   linewidth=2.5, markersize=8, label='Diastolic (Lower)', color='#3498db')
+            
+            # نمایش مقادیر روی نقاط - سیستولیک
+            for i, (x, y) in enumerate(zip(range(len(dates)), systolic_values)):
+                ax.annotate(f'{int(y)}', 
+                           xy=(x, y), 
+                           xytext=(0, 10),
+                           textcoords='offset points',
+                           ha='center',
+                           fontsize=9,
+                           fontweight='bold',
+                           color='#c0392b',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#e74c3c', alpha=0.8))
+            
+            # نمایش مقادیر روی نقاط - دیاستولیک
+            for i, (x, y) in enumerate(zip(range(len(dates)), diastolic_values)):
+                ax.annotate(f'{int(y)}', 
+                           xy=(x, y), 
+                           xytext=(0, -15),
+                           textcoords='offset points',
+                           ha='center',
+                           fontsize=9,
+                           fontweight='bold',
+                           color='#2874a6',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#3498db', alpha=0.8))
+            
             ax.legend(fontsize=11, loc='upper left')
+            
+        elif title == "قند خون":
+            # نمودار قند خون با تفکیک ناشتا و بعد از غذا
+            fasting_indices = []
+            fasting_values = []
+            after_meal_indices = []
+            after_meal_values = []
+            
+            for i, (val, typ) in enumerate(zip(values, types)):
+                if 'ناشتا' in typ:
+                    fasting_indices.append(i)
+                    fasting_values.append(val)
+                else:
+                    after_meal_indices.append(i)
+                    after_meal_values.append(val)
+            
+            # رسم نقاط ناشتا
+            if fasting_indices:
+                ax.plot(fasting_indices, fasting_values, marker='o', linestyle='-', 
+                       linewidth=2.5, markersize=8, label='Fasting', color='#3498db')
+                
+                # نمایش مقادیر
+                for x, y in zip(fasting_indices, fasting_values):
+                    ax.annotate(f'{int(y)}', 
+                               xy=(x, y), 
+                               xytext=(0, 10),
+                               textcoords='offset points',
+                               ha='center',
+                               fontsize=9,
+                               fontweight='bold',
+                               color='#2874a6',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#3498db', alpha=0.8))
+            
+            # رسم نقاط بعد از غذا
+            if after_meal_indices:
+                ax.plot(after_meal_indices, after_meal_values, marker='s', linestyle='-', 
+                       linewidth=2.5, markersize=8, label='After Meal', color='#e74c3c')
+                
+                # نمایش مقادیر
+                for x, y in zip(after_meal_indices, after_meal_values):
+                    ax.annotate(f'{int(y)}', 
+                               xy=(x, y), 
+                               xytext=(0, 10),
+                               textcoords='offset points',
+                               ha='center',
+                               fontsize=9,
+                               fontweight='bold',
+                               color='#c0392b',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#e74c3c', alpha=0.8))
+            
+            ax.legend(fontsize=11, loc='upper left')
+            
         else:
-            # نمودار یک خطی
+            # نمودار یک خطی (وزن)
             ax.plot(range(len(dates)), values, marker='o', linestyle='-', 
                    linewidth=2.5, markersize=8, color='#2ecc71', label=english_title)
+            
+            # نمایش مقادیر روی نقاط
+            for i, (x, y) in enumerate(zip(range(len(dates)), values)):
+                ax.annotate(f'{y:.1f}', 
+                           xy=(x, y), 
+                           xytext=(0, 10),
+                           textcoords='offset points',
+                           ha='center',
+                           fontsize=9,
+                           fontweight='bold',
+                           color='#27ae60',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#2ecc71', alpha=0.8))
         
         # تنظیمات محور X (تاریخ شمسی)
         ax.set_xticks(range(len(shamsi_dates)))
