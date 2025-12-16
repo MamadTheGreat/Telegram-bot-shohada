@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
-from keyboards import get_symptoms_menu_keyboard, get_back_keyboard, get_blood_sugar_menu_keyboard, get_history_menu_keyboard
+from keyboards import get_symptoms_menu_keyboard, get_back_keyboard, get_blood_sugar_menu_keyboard, get_history_menu_keyboard, get_main_menu_keyboard
 from services.google_sheets_service import save_symptom, get_user_symptoms
 from services.chart_service import generate_chart
 import os
@@ -271,7 +271,6 @@ async def send_blood_sugar_chart(update: Update, context: ContextTypes.DEFAULT_T
     )
     
     try:
-        # دریافت داده‌های قند خون
         data = await get_user_symptoms(user.id, "قند")
         
         if not data:
@@ -283,12 +282,10 @@ async def send_blood_sugar_chart(update: Update, context: ContextTypes.DEFAULT_T
             )
             return VIEWING_HISTORY
         
-        # ساخت نمودار
         chart_path = await generate_chart(data, "قند خون", "mg/dL")
         
         await processing_msg.delete()
         
-        # ارسال نمودار
         with open(chart_path, 'rb') as photo:
             await update.message.reply_photo(
                 photo=photo,
@@ -298,7 +295,6 @@ async def send_blood_sugar_chart(update: Update, context: ContextTypes.DEFAULT_T
                 reply_markup=get_history_menu_keyboard()
             )
         
-        # حذف فایل موقت
         os.remove(chart_path)
         
     except Exception as e:
@@ -399,17 +395,18 @@ async def send_weight_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_back_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """هندلر دکمه بازگشت - برگشت به منوی اصلی"""
-    from keyboards import get_main_menu_keyboard
-    from handlers.start_handler import start_command
-    
     # پاک کردن user_data
     context.user_data.clear()
     
-    # برگشت به منوی اصلی
-    return await start_command(update, context)
+    # ارسال منوی اصلی
+    await update.message.reply_text(
+        "🔙 بازگشت به منوی اصلی",
+        reply_markup=get_main_menu_keyboard()
+    )
+    return ConversationHandler.END
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """لغو عملیات"""
-    from keyboards import get_main_menu_keyboard
-    
     # پاک کردن user_data
     context.user_data.clear()
     
