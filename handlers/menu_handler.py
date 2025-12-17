@@ -1,6 +1,6 @@
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from keyboards import get_education_menu_keyboard, get_back_keyboard
+from keyboards import get_education_menu_keyboard, get_back_keyboard, get_main_menu_keyboard
 
 async def handle_menu_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -19,6 +19,9 @@ async def handle_menu_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def show_education_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """نمایش منوی آموزش"""
+    # پاک کردن flag ثبت علائم
+    context.user_data['in_symptoms_menu'] = False
+    
     message = """
 📚 منوی آموزش
 
@@ -31,13 +34,12 @@ async def show_education_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def show_symptoms_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """نمایش منوی ثبت علائم"""
-    message = """
-📝 ثبت علائم
+    # این تابع فقط برای compatibility هست
+    # ConversationHandler خودش handle میکنه
+    pass
 
 async def show_contact_expert(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """نمایش منوی ارتباط با کارشناس"""
-    from telegram import ReplyKeyboardMarkup
-    
     keyboard = [
         ["🩺 مشاوره پرستاری"],
         ["📞 اطلاعات تماس"],
