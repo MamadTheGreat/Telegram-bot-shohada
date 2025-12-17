@@ -18,6 +18,10 @@ from handlers.symptoms_handler import (
     ENTERING_BLOOD_PRESSURE_SYSTOLIC, ENTERING_BLOOD_PRESSURE_DIASTOLIC,
     ENTERING_WEIGHT, VIEWING_HISTORY
 )
+from handlers.nursing_consultation import (
+    start_consultation, select_disease, answer_question, cancel_consultation,
+    SELECTING_DISEASE, ANSWERING_QUESTIONS
+)
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     """یک HTTP handler ساده برای health check"""
@@ -102,16 +106,54 @@ def main():
         ]
     )
     
+    # Conversation Handler برای مشاوره پرستاری
+    nursing_conv_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(filters.Regex('^🩺 مشاوره پرستاری$'), start_consultation)
+        ],
+        states={
+            SELECTING_DISEASE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, select_disease)
+            ],
+            ANSWERING_QUESTIONS: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, answer_question)
+            ]
+        },
+        fallbacks=[
+            MessageHandler(filters.Regex('^🔙 بازگشت'), cancel_consultation),
+            CommandHandler('cancel', cancel_consultation)
+        ]
+    )
+    
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
     
-    # Conversation Handler برای ثبت علائم - باید قبل از بقیه هندلرها باشه
+    # Conversation Handlers
     application.add_handler(symptoms_conv_handler)
+    application.add_handler(nursing_conv_handler)
     
     # هندلر برای منوی اصلی (به جز ثبت علائم)
     application.add_handler(MessageHandler(
         filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
         handle_menu_selection
+    ))
+    
+    # هندلر برای اطلاعات تماس
+    async def show_contact_info(update, context):
+        await update.message.reply_text(
+            "📞 اطلاعات تماس\n\n"
+            "برای دریافت مشاوره تخصصی:\n\n"
+            "☎️ تلفن: 021-12345678\n"
+            "📱 موبایل: 0912-345-6789\n"
+            "📧 ایمیل: info@hospital.com\n"
+            "🕐 ساعات پاسخگویی: 8 صبح تا 8 شب\n\n"
+            "⚠️ در مواقع اورژانسی با 115 تماس بگیرید.",
+            reply_markup=get_main_menu_keyboard()
+        )
+    
+    application.add_handler(MessageHandler(
+        filters.Regex('^📞 اطلاعات تماس$'),
+        show_contact_info
     ))
     
     # هندلر برای "فشار خون" که می‌تونه از آموزش یا ثبت علائم باشه
