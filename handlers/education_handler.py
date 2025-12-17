@@ -132,3 +132,18 @@ async def handle_disease_selection(update: Update, context: ContextTypes.DEFAULT
             await processing_message.delete()
         except:
             pass
+
+async def route_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    مسیریابی برای "فشار خون" - 
+    به آموزش یا ثبت علائم هدایت می‌کند
+    """
+    # چک کنیم که از کدوم منو اومده
+    # اگه در ConversationHandler ثبت علائم هستیم
+    if context.user_data.get('in_symptoms_menu'):
+        # از منوی ثبت علائم اومده
+        from handlers.symptoms_handler import ask_blood_pressure_systolic
+        return await ask_blood_pressure_systolic(update, context)
+    else:
+        # از منوی آموزش اومده
+        return await handle_disease_selection(update, context)
