@@ -6,7 +6,7 @@ from config import BOT_TOKEN
 from handlers.start_handler import start_command
 from handlers.menu_handler import handle_menu_selection, show_contact_expert
 from handlers.education_handler import handle_education_menu, handle_disease_selection
-from handlers.education_handler import route_blood_pressure
+from handlers.education_handler import handle_education_menu, handle_disease_selection, route_blood_pressure
 from handlers.symptoms_handler import (
     handle_symptoms_menu, handle_blood_sugar_menu, handle_back_button,
     ask_fasting_blood_sugar, ask_after_meal_blood_sugar, save_blood_sugar,
