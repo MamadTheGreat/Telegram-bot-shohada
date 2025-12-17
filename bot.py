@@ -22,6 +22,7 @@ from handlers.nursing_consultation import (
     start_consultation, select_disease, answer_question, cancel_consultation,
     SELECTING_DISEASE, ANSWERING_QUESTIONS
 )
+from keyboards import get_main_menu_keyboard
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     """یک HTTP handler ساده برای health check"""
@@ -128,7 +129,7 @@ def main():
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
     
-    # Conversation Handlers
+    # Conversation Handlers - باید قبل از message handlers باشن
     application.add_handler(symptoms_conv_handler)
     application.add_handler(nursing_conv_handler)
     
