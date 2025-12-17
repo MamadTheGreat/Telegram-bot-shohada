@@ -6,7 +6,7 @@ from config import BOT_TOKEN
 from handlers.start_handler import start_command
 from handlers.menu_handler import handle_menu_selection, show_contact_expert
 from handlers.education_handler import handle_education_menu, handle_disease_selection
-from handlers.education_router import route_blood_pressure
+from handlers.education_handler import route_blood_pressure
 from handlers.symptoms_handler import (
     handle_symptoms_menu, handle_blood_sugar_menu, handle_back_button,
     ask_fasting_blood_sugar, ask_after_meal_blood_sugar, save_blood_sugar,
@@ -69,22 +69,27 @@ def main():
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
             ],
             ENTERING_BLOOD_SUGAR_FASTING: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_SUGAR_AFTER_MEAL: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_sugar)
             ],
             ENTERING_BLOOD_PRESSURE_SYSTOLIC: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, ask_blood_pressure_diastolic)
             ],
             ENTERING_BLOOD_PRESSURE_DIASTOLIC: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_blood_pressure)
             ],
             ENTERING_WEIGHT: [
+                MessageHandler(filters.Regex('^(بازگشت به منوی اصلی)$'), start_command),
                 MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_weight)
             ],
@@ -96,6 +101,7 @@ def main():
             ],
         },
         fallbacks=[
+            MessageHandler(filters.Regex('^بازگشت به منوی اصلی$'), start_command),
             MessageHandler(filters.Regex('^🔙 بازگشت$'), handle_back_button),
             CommandHandler('cancel', cancel)
         ]
@@ -120,16 +126,20 @@ def main():
         ]
     )
     
-    # اضافه کردن هندلرها به ترتیب اولویت
-    
-    # 1. دستور /start
+    # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
     
-    # 2. Conversation Handlers - باید قبل از message handlers عادی باشن
-    application.add_handler(nursing_conv_handler)
+    # Conversation Handlers - باید قبل از message handlers باشن
     application.add_handler(symptoms_conv_handler)
+    application.add_handler(nursing_conv_handler)
     
-    # 3. هندلر اطلاعات تماس
+    # هندلر برای منوی اصلی
+    application.add_handler(MessageHandler(
+        filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
+        handle_menu_selection
+    ))
+    
+    # هندلر برای اطلاعات تماس
     async def show_contact_info(update, context):
         await update.message.reply_text(
             "📞 اطلاعات تماس\n\n"
@@ -138,43 +148,56 @@ def main():
             "📱 موبایل: 0912-345-6789\n"
             "📧 ایمیل: info@hospital.com\n"
             "🕐 ساعات پاسخگویی: 8 صبح تا 8 شب\n\n"
-            "⚠️ در مواقع اورژانسی با 115 تماس بگیرید.",
-            reply_markup=get_main_menu_keyboard()
+            "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
         )
+        # بعد از نمایش اطلاعات، دوباره منوی ارتباط با کارشناس رو نشون بده
+        await show_contact_expert(update, context)
     
     application.add_handler(MessageHandler(
         filters.Regex('^📞 اطلاعات تماس$'),
         show_contact_info
     ))
     
-    # 4. هندلر بازگشت از منوی ارتباط با کارشناس
-    async def back_to_main(update, context):
-        # فقط اگه در conversation نباشیم
-        if 'nursing' not in context.user_data and 'in_symptoms_menu' not in context.user_data:
-            await start_command(update, context)
+    # هندلر برای بازگشت از منوی ارتباط با کارشناس
+    async def back_from_contact(update, context):
+        await update.message.reply_text(
+            "🔙 بازگشت به منوی اصلی",
+            reply_markup=get_main_menu_keyboard()
+        )
     
     application.add_handler(MessageHandler(
-        filters.Regex('^🔙 بازگشت$'),
-        back_to_main
+        filters.Regex('^🔙 بازگشت$') & ~filters.Regex('^(ثبت علائم|آموزش)$'),
+        back_from_contact
     ))
     
-    # 5. هندلر منوی اصلی
+    # هندلر برای "فشار خون" که می‌تونه از آموزش یا ثبت علائم باشه
     application.add_handler(MessageHandler(
-        filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
-        handle_menu_selection
+        filters.Regex('^فشار خون$'),
+        route_blood_pressure
     ))
     
-    # 6. هندلر منوی آموزش - بیماری‌ها
+    # هندلر برای منوی آموزش - بدون فشار خون
     application.add_handler(MessageHandler(
-        filters.Regex('^(دیابت نوع ۲|فشار خون|بیماری قلبی عروقی)$'),
+        filters.Regex('^(دیابت نوع ۲|بیماری قلبی عروقی)$'),
         handle_disease_selection
     ))
     
-    # شروع ربات
-    print("🤖 ربات در حال اجرا است...")
-    print("✅ Health check server راه‌اندازی شد")
-    print("📡 در حال listening برای پیام‌های تلگرام...")
+    # هندلر برای بازگشت به منوی اصلی از آموزش
+    async def back_to_main_from_education(update, context):
+        # پاک کردن فلگ ثبت علائم
+        context.user_data.pop('in_symptoms_menu', None)
+        await update.message.reply_text(
+            "🔙 بازگشت به منوی اصلی",
+            reply_markup=get_main_menu_keyboard()
+        )
     
+    application.add_handler(MessageHandler(
+        filters.Regex('^🔙 بازگشت$'),
+        back_to_main_from_education
+    ))
+    
+    # شروع ربات
+    print("ربات در حال اجرا است...")
     application.run_polling(allowed_updates=["message"])
 
 if __name__ == '__main__':
