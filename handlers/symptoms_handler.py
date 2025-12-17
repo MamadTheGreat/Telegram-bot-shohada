@@ -67,15 +67,25 @@ async def ask_after_meal_blood_sugar(update: Update, context: ContextTypes.DEFAU
 
 async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره قند خون"""
+    text = update.message.text
+    
+    # چک کردن دکمه بازگشت
+    if text == "🔙 بازگشت":
+        return await handle_back_button(update, context)
+    
     try:
-        value = float(update.message.text)
+        value = float(text)
         
         if value < 0 or value > 600:
             await update.message.reply_text(
                 "❌ مقدار وارد شده نامعتبر است!\n"
                 "لطفاً عددی بین 0 تا 600 وارد کنید."
             )
-            return ENTERING_BLOOD_SUGAR_FASTING
+            symptom_type = context.user_data.get('symptom_type', 'قند خون')
+            if 'ناشتا' in symptom_type:
+                return ENTERING_BLOOD_SUGAR_FASTING
+            else:
+                return ENTERING_BLOOD_SUGAR_AFTER_MEAL
         
         user = update.effective_user
         symptom_type = context.user_data.get('symptom_type', 'قند خون')
@@ -108,7 +118,11 @@ async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ لطفاً فقط عدد وارد کنید!\n"
             "مثال: 95"
         )
-        return ENTERING_BLOOD_SUGAR_FASTING
+        symptom_type = context.user_data.get('symptom_type', 'قند خون')
+        if 'ناشتا' in symptom_type:
+            return ENTERING_BLOOD_SUGAR_FASTING
+        else:
+            return ENTERING_BLOOD_SUGAR_AFTER_MEAL
 
 async def ask_blood_pressure_systolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون سیستولیک"""
@@ -122,8 +136,14 @@ async def ask_blood_pressure_systolic(update: Update, context: ContextTypes.DEFA
 
 async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون دیاستولیک"""
+    text = update.message.text
+    
+    # چک کردن دکمه بازگشت
+    if text == "🔙 بازگشت":
+        return await handle_back_button(update, context)
+    
     try:
-        systolic = int(update.message.text)
+        systolic = int(text)
         
         if systolic < 70 or systolic > 250:
             await update.message.reply_text(
@@ -138,7 +158,8 @@ async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEF
         await update.message.reply_text(
             "💓 ثبت فشار خون\n\n"
             "لطفاً فشار خون دیاستولیک (عدد کوچک‌تر) را وارد کنید:\n"
-            "(فقط عدد، مثال: 80)"
+            "(فقط عدد، مثال: 80)",
+            reply_markup=get_back_keyboard()
         )
         return ENTERING_BLOOD_PRESSURE_DIASTOLIC
         
@@ -151,8 +172,14 @@ async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEF
 
 async def save_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره فشار خون"""
+    text = update.message.text
+    
+    # چک کردن دکمه بازگشت
+    if text == "🔙 بازگشت":
+        return await handle_back_button(update, context)
+    
     try:
-        diastolic = int(update.message.text)
+        diastolic = int(text)
         
         if diastolic < 40 or diastolic > 150:
             await update.message.reply_text(
@@ -186,6 +213,9 @@ async def save_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE
                 reply_markup=get_symptoms_menu_keyboard()
             )
         
+        # پاک کردن systolic از user_data
+        context.user_data.pop('systolic', None)
+        
         return CHOOSING_SYMPTOM
         
     except ValueError:
@@ -207,8 +237,14 @@ async def ask_weight(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def save_weight(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره وزن"""
+    text = update.message.text
+    
+    # چک کردن دکمه بازگشت
+    if text == "🔙 بازگشت":
+        return await handle_back_button(update, context)
+    
     try:
-        weight = float(update.message.text)
+        weight = float(text)
         
         if weight < 20 or weight > 300:
             await update.message.reply_text(
