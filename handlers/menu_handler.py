@@ -34,21 +34,27 @@ async def show_symptoms_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     message = """
 📝 ثبت علائم
 
-این بخش در مرحله بعدی توسعه داده خواهد شد.
-    """
-    await update.message.reply_text(
-        message,
-        reply_markup=get_back_keyboard()
-    )
-
 async def show_contact_expert(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """نمایش اطلاعات تماس با کارشناس"""
+    """نمایش منوی ارتباط با کارشناس"""
+    from telegram import ReplyKeyboardMarkup
+    
+    keyboard = [
+        ["🩺 مشاوره پرستاری"],
+        ["📞 اطلاعات تماس"],
+        ["🔙 بازگشت"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    
     message = """
 👨‍⚕️ ارتباط با کارشناس
 
-این بخش در مرحله بعدی توسعه داده خواهد شد.
+لطفاً یکی از گزینه‌ها را انتخاب کنید:
+
+🩺 مشاوره پرستاری: پرسش و پاسخ با کارشناس پرستاری
+
+📞 اطلاعات تماس: دریافت شماره تماس و ایمیل
     """
     await update.message.reply_text(
         message,
-        reply_markup=get_back_keyboard()
+        reply_markup=reply_markup
     )
