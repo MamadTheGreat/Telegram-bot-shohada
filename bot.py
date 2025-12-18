@@ -5,7 +5,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from config import BOT_TOKEN
 from handlers.start_handler import start_command
 from handlers.menu_handler import handle_menu_selection, show_contact_expert
-from handlers.education_handler import handle_education_menu, handle_disease_selection
 from handlers.education_handler import handle_education_menu, handle_disease_selection, route_blood_pressure
 from handlers.symptoms_handler import (
     handle_symptoms_menu, handle_blood_sugar_menu, handle_back_button,
@@ -222,7 +221,7 @@ def main():
     ))
     
     # شروع ربات
-    print("ربات در حال اجرا است...")
+    print("🚀 ربات در حال اجرا است...")
     application.run_polling(allowed_updates=["message"])
 
 if __name__ == '__main__':
