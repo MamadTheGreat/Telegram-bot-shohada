@@ -5,13 +5,16 @@ import sys
 # بررسی API Key
 if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
     print("❌ خطا: GEMINI_API_KEY تنظیم نشده است!")
-    print("لطفاً در Render Environment Variables تنظیم کنید.")
-else:
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        print(f"✅ Gemini API configured successfully")
-    except Exception as e:
-        print(f"❌ خطا در تنظیم Gemini API: {e}")
+    print("لطفاً در config.py یا Environment Variables تنظیم کنید.")
+    sys.exit(1)
+
+# تنظیم API Key
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    print(f"✅ Gemini API configured (key length: {len(GEMINI_API_KEY)})")
+except Exception as e:
+    print(f"❌ خطا در تنظیم Gemini API: {e}")
+    sys.exit(1)
 
 # تنظیمات مدل
 generation_config = {
@@ -52,7 +55,9 @@ async def ask_gemini(question: str, conversation_history: list = None) -> str:
         پاسخ Gemini
     """
     try:
-        print(f"[GEMINI] Sending question: {question[:50]}...")
+        print(f"[DEBUG] Sending question to Gemini: {question[:50]}...")
+        print(f"[DEBUG] API Key exists: {bool(GEMINI_API_KEY)}")
+        print(f"[DEBUG] API Key length: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 0}")
         
         # ساخت مدل
         model = genai.GenerativeModel(
@@ -62,7 +67,7 @@ async def ask_gemini(question: str, conversation_history: list = None) -> str:
             system_instruction=GEMINI_SYSTEM_PROMPT
         )
         
-        print("[GEMINI] Model created")
+        print("[DEBUG] Model created successfully")
         
         # شروع چت
         if conversation_history:
@@ -70,50 +75,38 @@ async def ask_gemini(question: str, conversation_history: list = None) -> str:
         else:
             chat = model.start_chat(history=[])
         
-        print("[GEMINI] Sending message...")
+        print("[DEBUG] Chat started, sending message...")
         
         # ارسال پیام
         response = chat.send_message(question)
         
-        print("[GEMINI] Response received")
+        print("[DEBUG] Response received")
         
         # استخراج متن پاسخ
         answer = response.text
+        
+        print(f"[DEBUG] Answer length: {len(answer)}")
         
         # اضافه کردن هشدار در صورتی که در پاسخ نباشد
         if "جایگزین مشاوره پزشک" not in answer and "جایگزین ویزیت" not in answer:
             answer += "\n\n⚠️ این راهنمایی کلی است و جایگزین مشاوره پزشک نمی‌شود. لطفاً با پزشک معالج خود مشورت کنید."
         
-        print(f"[GEMINI] Success! Answer length: {len(answer)}")
         return answer
         
     except Exception as e:
-        print(f"[GEMINI ERROR] Type: {type(e).__name__}")
-        print(f"[GEMINI ERROR] Message: {str(e)}")
+        print(f"[ERROR] خطا در ارتباط با Gemini: {type(e).__name__}")
+        print(f"[ERROR] خطای کامل: {str(e)}")
+        import traceback
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         
-        error_msg = str(e).lower()
-        
-        if "api key" in error_msg or "invalid" in error_msg:
-            return (
-                "❌ خطا در تنظیمات API\n\n"
-                "لطفاً با مدیر سیستم تماس بگیرید.\n\n"
-                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
-        elif "quota" in error_msg or "resource exhausted" in error_msg:
-            return (
-                "❌ سهمیه API تمام شده است\n\n"
-                "لطفاً با شماره تماس 021-12345678 تماس بگیرید.\n\n"
-                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
-        else:
-            return (
-                f"❌ متأسفانه در حال حاضر امکان پاسخگویی وجود ندارد.\n\n"
-                f"خطا: {str(e)[:100]}\n\n"
-                f"لطفاً:\n"
-                f"• چند لحظه دیگر تلاش کنید\n"
-                f"• یا با شماره تماس 021-12345678 تماس بگیرید\n\n"
-                f"⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
+        return (
+            f"❌ متأسفانه در حال حاضر امکان پاسخگویی وجود ندارد.\n\n"
+            f"خطا: {str(e)[:100]}\n\n"
+            f"لطفاً:\n"
+            f"• چند لحظه دیگر تلاش کنید\n"
+            f"• یا با شماره تماس 021-12345678 تماس بگیرید\n\n"
+            f"⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
+        )
 
 async def ask_gemini_with_context(question: str, disease_context: str = None) -> str:
     """
