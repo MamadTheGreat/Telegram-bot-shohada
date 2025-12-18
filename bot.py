@@ -22,6 +22,11 @@ from handlers.nursing_consultation import (
     start_consultation, select_disease, answer_question, cancel_consultation,
     SELECTING_DISEASE, ANSWERING_QUESTIONS
 )
+from handlers.ai_consultation import (
+    start_ai_consultation, select_topic, answer_question as ai_answer_question,
+    cancel_ai_consultation,
+    SELECTING_TOPIC, ASKING_QUESTION
+)
 from keyboards import get_main_menu_keyboard
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -107,10 +112,10 @@ def main():
         ]
     )
     
-    # Conversation Handler برای مشاوره پرستاری
+    # Conversation Handler برای مشاوره پرستاری (قدیمی - فلو سوال/جواب)
     nursing_conv_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex('^🩺 مشاوره پرستاری$'), start_consultation)
+            MessageHandler(filters.Regex('^💬 مشاوره پرستاری \(فلو سوالات\)$'), start_consultation)
         ],
         states={
             SELECTING_DISEASE: [
@@ -126,12 +131,32 @@ def main():
         ]
     )
     
+    # Conversation Handler برای مشاوره هوشمند با AI
+    ai_consultation_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(filters.Regex('^🩺 مشاوره پرستاری$'), start_ai_consultation)
+        ],
+        states={
+            SELECTING_TOPIC: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, select_topic)
+            ],
+            ASKING_QUESTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, ai_answer_question)
+            ]
+        },
+        fallbacks=[
+            MessageHandler(filters.Regex('^🔙 بازگشت'), cancel_ai_consultation),
+            CommandHandler('cancel', cancel_ai_consultation)
+        ]
+    )
+    
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
     
     # Conversation Handlers - باید قبل از message handlers باشن
     application.add_handler(symptoms_conv_handler)
-    application.add_handler(nursing_conv_handler)
+    application.add_handler(ai_consultation_handler)  # مشاوره هوشمند
+    application.add_handler(nursing_conv_handler)  # فلو قدیمی
     
     # هندلر برای منوی اصلی
     application.add_handler(MessageHandler(
