@@ -112,7 +112,7 @@ def main():
         ]
     )
     
-    # Conversation Handler برای مشاوره پرستاری (قدیمی - فلو سوال/جواب)
+    # Conversation Handler برای مشاوره پرستاری (فلو سوالات)
     nursing_conv_handler = ConversationHandler(
         entry_points=[
             MessageHandler(filters.Regex('^💬 مشاوره پرستاری \(فلو سوالات\)$'), start_consultation)
@@ -134,7 +134,7 @@ def main():
     # Conversation Handler برای مشاوره هوشمند با AI
     ai_consultation_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex('^🩺 مشاوره پرستاری$'), start_ai_consultation)
+            MessageHandler(filters.Regex('^🤖 مشاوره هوشمند \(AI\)$'), start_ai_consultation)
         ],
         states={
             SELECTING_TOPIC: [
