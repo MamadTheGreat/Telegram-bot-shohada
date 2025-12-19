@@ -17,15 +17,6 @@ from handlers.symptoms_handler import (
     ENTERING_BLOOD_PRESSURE_SYSTOLIC, ENTERING_BLOOD_PRESSURE_DIASTOLIC,
     ENTERING_WEIGHT, VIEWING_HISTORY
 )
-from handlers.nursing_consultation import (
-    start_consultation, select_disease, answer_question, cancel_consultation,
-    SELECTING_DISEASE, ANSWERING_QUESTIONS
-)
-from handlers.ai_consultation import (
-    start_ai_consultation, select_topic, answer_question as ai_answer_question,
-    cancel_ai_consultation,
-    SELECTING_TOPIC, ASKING_QUESTION
-)
 from keyboards import get_main_menu_keyboard
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -152,46 +143,13 @@ def main():
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
     
-    # Conversation Handlers - باید قبل از message handlers باشن
+    # Conversation Handler فقط برای ثبت علائم
     application.add_handler(symptoms_conv_handler)
-    application.add_handler(ai_consultation_handler)  # مشاوره هوشمند
-    application.add_handler(nursing_conv_handler)  # فلو قدیمی
     
     # هندلر برای منوی اصلی
     application.add_handler(MessageHandler(
         filters.Regex('^(آموزش|ارتباط با کارشناس)$'), 
         handle_menu_selection
-    ))
-    
-    # هندلر برای اطلاعات تماس
-    async def show_contact_info(update, context):
-        await update.message.reply_text(
-            "📞 اطلاعات تماس\n\n"
-            "برای دریافت مشاوره تخصصی:\n\n"
-            "☎️ تلفن: 021-12345678\n"
-            "📱 موبایل: 0912-345-6789\n"
-            "📧 ایمیل: info@hospital.com\n"
-            "🕐 ساعات پاسخگویی: 8 صبح تا 8 شب\n\n"
-            "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-        )
-        # بعد از نمایش اطلاعات، دوباره منوی ارتباط با کارشناس رو نشون بده
-        await show_contact_expert(update, context)
-    
-    application.add_handler(MessageHandler(
-        filters.Regex('^📞 اطلاعات تماس$'),
-        show_contact_info
-    ))
-    
-    # هندلر برای بازگشت از منوی ارتباط با کارشناس
-    async def back_from_contact(update, context):
-        await update.message.reply_text(
-            "🔙 بازگشت به منوی اصلی",
-            reply_markup=get_main_menu_keyboard()
-        )
-    
-    application.add_handler(MessageHandler(
-        filters.Regex('^🔙 بازگشت$') & ~filters.Regex('^(ثبت علائم|آموزش)$'),
-        back_from_contact
     ))
     
     # هندلر برای "فشار خون" که می‌تونه از آموزش یا ثبت علائم باشه
