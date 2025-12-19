@@ -42,32 +42,26 @@ async def show_symptoms_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 async def show_contact_expert(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """نمایش منوی ارتباط با کارشناس"""
-    keyboard = [
-        ["🤖 مشاوره هوشمند (AI)"],
-        ["💬 مشاوره پرستاری (فلو سوالات)"],
-        ["📞 اطلاعات تماس"],
-        ["🔙 بازگشت"]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    """نمایش اطلاعات تماس"""
+    from keyboards import get_main_menu_keyboard
     
     message = """
-👨‍⚕️ ارتباط با کارشناس
+📞 اطلاعات تماس
 
-لطفاً یکی از گزینه‌ها را انتخاب کنید:
+برای دریافت مشاوره تخصصی با ما در ارتباط باشید:
 
-🤖 مشاوره هوشمند (AI): پرسش و پاسخ آزاد با هوش مصنوعی
-   • پاسخ سریع و فوری
-   • امکان پرسیدن هر سوالی
-   ⚠️ پاسخ‌ها توسط AI تولید می‌شوند
+☎️ تلفن: 021-12345678
+📱 موبایل: 0912-345-6789
+📧 ایمیل: info@hospital.com
 
-💬 مشاوره پرستاری (فلو سوالات): پاسخ به سوالات استاندارد
-   • فلوی مشخص سوال و جواب
-   • آموزش‌های تایید شده
+🕐 ساعات پاسخگویی: 
+   شنبه تا چهارشنبه: 8 صبح تا 8 شب
+   پنج‌شنبه: 8 صبح تا 2 بعدازظهر
 
-📞 اطلاعات تماس: دریافت شماره تماس و ایمیل
+⚠️ در مواقع اورژانسی با 115 تماس بگیرید.
     """
+    
     await update.message.reply_text(
         message,
-        reply_markup=reply_markup
+        reply_markup=get_main_menu_keyboard()
     )
