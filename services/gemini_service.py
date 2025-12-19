@@ -1,153 +1,90 @@
 import google.generativeai as genai
 from config import GEMINI_API_KEY, GEMINI_SYSTEM_PROMPT
-import sys
 
-# بررسی API Key
+# بررسی و تنظیم API Key
 if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
     print("❌ خطا: GEMINI_API_KEY تنظیم نشده است!")
-    print("لطفاً در Render Environment Variables تنظیم کنید.")
 else:
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        print(f"✅ Gemini API configured successfully")
+        print(f"✅ Gemini API configured")
     except Exception as e:
-        print(f"❌ خطا در تنظیم Gemini API: {e}")
+        print(f"❌ خطا در تنظیم Gemini: {e}")
 
-# تنظیمات مدل
+# تنظیمات ساده
 generation_config = {
     "temperature": 0.7,
-    "top_p": 0.95,
-    "top_k": 40,
     "max_output_tokens": 2048,
 }
-
-safety_settings = [
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    },
-]
 
 async def ask_gemini(question: str, conversation_history: list = None) -> str:
     """
     ارسال سوال به Gemini و دریافت پاسخ
-    
-    Args:
-        question: سوال کاربر
-        conversation_history: تاریخچه گفتگو (اختیاری)
-    
-    Returns:
-        پاسخ Gemini
     """
     try:
-        print(f"[GEMINI] Sending question: {question[:50]}...")
+        print(f"[GEMINI] Question: {question[:30]}...")
         
-        # اضافه کردن system instruction به خود سوال
+        # سوال کامل با system prompt
         full_question = f"""{GEMINI_SYSTEM_PROMPT}
 
-سوال کاربر: {question}"""
+سوال کاربر: {question}
+
+لطفاً به فارسی پاسخ دهید."""
         
-        # ساخت مدل (با نام مدل سازگار)
-        try:
-            # تلاش با مدل جدید
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash-latest",
-                generation_config=generation_config,
-                safety_settings=safety_settings
-            )
-            print("[GEMINI] Using model: gemini-1.5-flash-latest")
-        except:
+        # لیست مدل‌های قابل استفاده (به ترتیب اولویت)
+        models_to_try = [
+            "gemini-pro",
+            "models/gemini-pro",
+            "gemini-1.0-pro-latest",
+            "gemini-1.0-pro"
+        ]
+        
+        response = None
+        used_model = None
+        
+        # امتحان هر مدل
+        for model_name in models_to_try:
             try:
-                # اگه نشد، مدل قدیمی
-                model = genai.GenerativeModel(
-                    model_name="gemini-pro",
-                    generation_config=generation_config,
-                    safety_settings=safety_settings
+                print(f"[GEMINI] Trying model: {model_name}")
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(
+                    full_question,
+                    generation_config=generation_config
                 )
-                print("[GEMINI] Using model: gemini-pro")
-            except:
-                # آخرین امید
-                model = genai.GenerativeModel(
-                    model_name="gemini-1.0-pro",
-                    generation_config=generation_config,
-                    safety_settings=safety_settings
-                )
-                print("[GEMINI] Using model: gemini-1.0-pro")
+                used_model = model_name
+                print(f"[GEMINI] ✅ Success with: {model_name}")
+                break
+            except Exception as e:
+                print(f"[GEMINI] ❌ Failed with {model_name}: {str(e)[:50]}")
+                continue
         
-        print("[GEMINI] Model created")
+        # اگه هیچ مدلی کار نکرد
+        if not response:
+            raise Exception("هیچ مدلی در دسترس نیست")
         
-        # ارسال پیام
-        print("[GEMINI] Sending message...")
-        response = model.generate_content(full_question)
-        
-        print("[GEMINI] Response received")
-        
-        # استخراج متن پاسخ
+        # استخراج پاسخ
         answer = response.text
         
-        # اضافه کردن هشدار در صورتی که در پاسخ نباشد
-        if "جایگزین مشاوره پزشک" not in answer and "جایگزین ویزیت" not in answer:
+        # اضافه کردن هشدار
+        if "جایگزین مشاوره پزشک" not in answer:
             answer += "\n\n⚠️ این راهنمایی کلی است و جایگزین مشاوره پزشک نمی‌شود. لطفاً با پزشک معالج خود مشورت کنید."
         
-        print(f"[GEMINI] Success! Answer length: {len(answer)}")
+        print(f"[GEMINI] Answer length: {len(answer)}")
         return answer
         
     except Exception as e:
-        print(f"[GEMINI ERROR] Type: {type(e).__name__}")
-        print(f"[GEMINI ERROR] Message: {str(e)}")
+        print(f"[GEMINI ERROR] {type(e).__name__}: {str(e)}")
         
-        error_msg = str(e).lower()
-        
-        if "api key" in error_msg or "invalid" in error_msg:
-            return (
-                "❌ خطا در تنظیمات API\n\n"
-                "لطفاً با مدیر سیستم تماس بگیرید.\n\n"
-                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
-        elif "quota" in error_msg or "resource exhausted" in error_msg:
-            return (
-                "❌ سهمیه API تمام شده است\n\n"
-                "لطفاً با شماره تماس 021-12345678 تماس بگیرید.\n\n"
-                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
-        elif "not found" in error_msg or "404" in error_msg:
-            return (
-                "❌ مدل هوش مصنوعی در دسترس نیست\n\n"
-                "لطفاً با مدیر سیستم تماس بگیرید.\n\n"
-                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
-        else:
-            return (
-                f"❌ متأسفانه در حال حاضر امکان پاسخگویی وجود ندارد.\n\n"
-                f"خطا: {str(e)[:100]}\n\n"
-                f"لطفاً:\n"
-                f"• چند لحظه دیگر تلاش کنید\n"
-                f"• یا با شماره تماس 021-12345678 تماس بگیرید\n\n"
-                f"⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
-            )
+        # پیام خطای کاربرپسند
+        return (
+            "❌ متأسفانه در حال حاضر امکان پاسخگویی وجود ندارد.\n\n"
+            "لطفاً با شماره تماس 021-12345678 تماس بگیرید.\n\n"
+            "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
+        )
 
 async def ask_gemini_with_context(question: str, disease_context: str = None) -> str:
     """
-    ارسال سوال با context مشخص (مثلاً نوع بیماری)
-    
-    Args:
-        question: سوال کاربر
-        disease_context: زمینه بیماری (دیابت، فشار خون، قلبی)
-    
-    Returns:
-        پاسخ Gemini
+    ارسال سوال با context مشخص
     """
     if disease_context:
         full_question = f"زمینه: {disease_context}\n\nسوال: {question}"
