@@ -59,12 +59,32 @@ async def ask_gemini(question: str, conversation_history: list = None) -> str:
 
 سوال کاربر: {question}"""
         
-        # ساخت مدل (بدون system_instruction برای سازگاری)
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",  # مدل رایگان
-            generation_config=generation_config,
-            safety_settings=safety_settings
-        )
+        # ساخت مدل (با نام مدل سازگار)
+        try:
+            # تلاش با مدل جدید
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash-latest",
+                generation_config=generation_config,
+                safety_settings=safety_settings
+            )
+            print("[GEMINI] Using model: gemini-1.5-flash-latest")
+        except:
+            try:
+                # اگه نشد، مدل قدیمی
+                model = genai.GenerativeModel(
+                    model_name="gemini-pro",
+                    generation_config=generation_config,
+                    safety_settings=safety_settings
+                )
+                print("[GEMINI] Using model: gemini-pro")
+            except:
+                # آخرین امید
+                model = genai.GenerativeModel(
+                    model_name="gemini-1.0-pro",
+                    generation_config=generation_config,
+                    safety_settings=safety_settings
+                )
+                print("[GEMINI] Using model: gemini-1.0-pro")
         
         print("[GEMINI] Model created")
         
@@ -100,6 +120,12 @@ async def ask_gemini(question: str, conversation_history: list = None) -> str:
             return (
                 "❌ سهمیه API تمام شده است\n\n"
                 "لطفاً با شماره تماس 021-12345678 تماس بگیرید.\n\n"
+                "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
+            )
+        elif "not found" in error_msg or "404" in error_msg:
+            return (
+                "❌ مدل هوش مصنوعی در دسترس نیست\n\n"
+                "لطفاً با مدیر سیستم تماس بگیرید.\n\n"
                 "⚠️ در مواقع اورژانسی با 115 تماس بگیرید."
             )
         else:
