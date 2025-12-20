@@ -48,7 +48,7 @@ async def ask_fasting_blood_sugar(update: Update, context: ContextTypes.DEFAULT_
     await update.message.reply_text(
         "🩸 قند خون ناشتا\n\n"
         "لطفاً مقدار قند خون ناشتای خود را بر حسب mg/dL وارد کنید:\n"
-        "(فقط عدد، مثال: 95)",
+        "(عدد بین 0 تا 1200، مثال: 95)",
         reply_markup=get_back_keyboard()
     )
     context.user_data['symptom_type'] = 'قند ناشتا'
@@ -59,7 +59,7 @@ async def ask_after_meal_blood_sugar(update: Update, context: ContextTypes.DEFAU
     await update.message.reply_text(
         "🩸 قند خون بعد از غذا\n\n"
         "لطفاً مقدار قند خون بعد از غذای خود را بر حسب mg/dL وارد کنید:\n"
-        "(فقط عدد، مثال: 140)",
+        "(عدد بین 0 تا 1200، مثال: 140)",
         reply_markup=get_back_keyboard()
     )
     context.user_data['symptom_type'] = 'قند بعد از غذا'
@@ -67,25 +67,16 @@ async def ask_after_meal_blood_sugar(update: Update, context: ContextTypes.DEFAU
 
 async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره قند خون"""
-    text = update.message.text
-    
-    # چک کردن دکمه بازگشت
-    if text == "🔙 بازگشت":
-        return await handle_back_button(update, context)
-    
     try:
-        value = float(text)
+        value = float(update.message.text)
         
-        if value < 0 or value > 600:
+        # محدوده جدید: 0 تا 1200
+        if value < 0 or value > 1200:
             await update.message.reply_text(
                 "❌ مقدار وارد شده نامعتبر است!\n"
-                "لطفاً عددی بین 0 تا 600 وارد کنید."
+                "لطفاً عددی بین 0 تا 1200 وارد کنید."
             )
-            symptom_type = context.user_data.get('symptom_type', 'قند خون')
-            if 'ناشتا' in symptom_type:
-                return ENTERING_BLOOD_SUGAR_FASTING
-            else:
-                return ENTERING_BLOOD_SUGAR_AFTER_MEAL
+            return ENTERING_BLOOD_SUGAR_FASTING
         
         user = update.effective_user
         symptom_type = context.user_data.get('symptom_type', 'قند خون')
@@ -99,9 +90,16 @@ async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         if success:
+            # پیام هشدار اگه قند خیلی بالا یا پایین باشه
+            warning = ""
+            if value < 70:
+                warning = "\n⚠️ قند خون شما پایین است! در صورت احساس سرگیجه یا ضعف، فوراً یک شیرینی مصرف کنید."
+            elif value > 300:
+                warning = "\n⚠️ قند خون شما بسیار بالاست! حتماً با پزشک خود تماس بگیرید."
+            
             await update.message.reply_text(
                 f"✅ {symptom_type} شما با موفقیت ثبت شد!\n\n"
-                f"📊 مقدار: {value} mg/dL\n\n"
+                f"📊 مقدار: {value} mg/dL{warning}\n\n"
                 "می‌توانید علامت دیگری ثبت کنید یا به منوی اصلی برگردید.",
                 reply_markup=get_symptoms_menu_keyboard()
             )
@@ -118,37 +116,28 @@ async def save_blood_sugar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ لطفاً فقط عدد وارد کنید!\n"
             "مثال: 95"
         )
-        symptom_type = context.user_data.get('symptom_type', 'قند خون')
-        if 'ناشتا' in symptom_type:
-            return ENTERING_BLOOD_SUGAR_FASTING
-        else:
-            return ENTERING_BLOOD_SUGAR_AFTER_MEAL
+        return ENTERING_BLOOD_SUGAR_FASTING
 
 async def ask_blood_pressure_systolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون سیستولیک"""
     await update.message.reply_text(
         "💓 ثبت فشار خون\n\n"
         "لطفاً فشار خون سیستولیک (عدد بزرگ‌تر) را وارد کنید:\n"
-        "(فقط عدد، مثال: 120)",
+        "(عدد بین 70 تا 350، مثال: 120)",
         reply_markup=get_back_keyboard()
     )
     return ENTERING_BLOOD_PRESSURE_SYSTOLIC
 
 async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """درخواست فشار خون دیاستولیک"""
-    text = update.message.text
-    
-    # چک کردن دکمه بازگشت
-    if text == "🔙 بازگشت":
-        return await handle_back_button(update, context)
-    
     try:
-        systolic = int(text)
+        systolic = int(update.message.text)
         
-        if systolic < 70 or systolic > 250:
+        # محدوده جدید: 70 تا 350
+        if systolic < 70 or systolic > 350:
             await update.message.reply_text(
                 "❌ مقدار نامعتبر است!\n"
-                "فشار خون سیستولیک معمولاً بین 70 تا 250 است.\n"
+                "فشار خون سیستولیک باید بین 70 تا 350 باشد.\n"
                 "لطفاً دوباره وارد کنید:"
             )
             return ENTERING_BLOOD_PRESSURE_SYSTOLIC
@@ -158,8 +147,7 @@ async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEF
         await update.message.reply_text(
             "💓 ثبت فشار خون\n\n"
             "لطفاً فشار خون دیاستولیک (عدد کوچک‌تر) را وارد کنید:\n"
-            "(فقط عدد، مثال: 80)",
-            reply_markup=get_back_keyboard()
+            "(عدد بین 40 تا 170، مثال: 80)"
         )
         return ENTERING_BLOOD_PRESSURE_DIASTOLIC
         
@@ -172,19 +160,14 @@ async def ask_blood_pressure_diastolic(update: Update, context: ContextTypes.DEF
 
 async def save_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره فشار خون"""
-    text = update.message.text
-    
-    # چک کردن دکمه بازگشت
-    if text == "🔙 بازگشت":
-        return await handle_back_button(update, context)
-    
     try:
-        diastolic = int(text)
+        diastolic = int(update.message.text)
         
-        if diastolic < 40 or diastolic > 150:
+        # محدوده جدید: 40 تا 170
+        if diastolic < 40 or diastolic > 170:
             await update.message.reply_text(
                 "❌ مقدار نامعتبر است!\n"
-                "فشار خون دیاستولیک معمولاً بین 40 تا 150 است.\n"
+                "فشار خون دیاستولیک باید بین 40 تا 170 باشد.\n"
                 "لطفاً دوباره وارد کنید:"
             )
             return ENTERING_BLOOD_PRESSURE_DIASTOLIC
@@ -201,9 +184,16 @@ async def save_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         
         if success:
+            # پیام هشدار اگه فشار خیلی بالا یا پایین باشه
+            warning = ""
+            if systolic > 180 or diastolic > 120:
+                warning = "\n🚨 فشار خون شما بسیار بالاست! فوراً با پزشک خود تماس بگیرید یا به اورژانس مراجعه کنید."
+            elif systolic < 90 or diastolic < 60:
+                warning = "\n⚠️ فشار خون شما پایین است. در صورت سرگیجه یا ضعف، به پزشک مراجعه کنید."
+            
             await update.message.reply_text(
                 f"✅ فشار خون شما با موفقیت ثبت شد!\n\n"
-                f"📊 مقدار: {systolic}/{diastolic} mmHg\n\n"
+                f"📊 مقدار: {systolic}/{diastolic} mmHg{warning}\n\n"
                 "می‌توانید علامت دیگری ثبت کنید یا به منوی اصلی برگردید.",
                 reply_markup=get_symptoms_menu_keyboard()
             )
@@ -212,9 +202,6 @@ async def save_blood_pressure(update: Update, context: ContextTypes.DEFAULT_TYPE
                 "❌ خطا در ذخیره اطلاعات. لطفاً دوباره تلاش کنید.",
                 reply_markup=get_symptoms_menu_keyboard()
             )
-        
-        # پاک کردن systolic از user_data
-        context.user_data.pop('systolic', None)
         
         return CHOOSING_SYMPTOM
         
@@ -230,26 +217,21 @@ async def ask_weight(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "⚖️ ثبت وزن\n\n"
         "لطفاً وزن خود را بر حسب کیلوگرم وارد کنید:\n"
-        "(می‌توانید اعشار هم وارد کنید، مثال: 75.5)",
+        "(عدد بین 20 تا 200، می‌توانید اعشار هم وارد کنید، مثال: 75.5)",
         reply_markup=get_back_keyboard()
     )
     return ENTERING_WEIGHT
 
 async def save_weight(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ذخیره وزن"""
-    text = update.message.text
-    
-    # چک کردن دکمه بازگشت
-    if text == "🔙 بازگشت":
-        return await handle_back_button(update, context)
-    
     try:
-        weight = float(text)
+        weight = float(update.message.text)
         
-        if weight < 20 or weight > 300:
+        # محدوده جدید: 20 تا 200
+        if weight < 20 or weight > 200:
             await update.message.reply_text(
                 "❌ مقدار نامعتبر است!\n"
-                "لطفاً عددی بین 20 تا 300 وارد کنید."
+                "لطفاً عددی بین 20 تا 200 وارد کنید."
             )
             return ENTERING_WEIGHT
         
