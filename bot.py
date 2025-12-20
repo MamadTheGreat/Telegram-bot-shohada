@@ -142,6 +142,7 @@ def main():
     
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("reset", start_command))  # reset هم همون start باشه
     
     # Conversation Handler فقط برای ثبت علائم
     application.add_handler(symptoms_conv_handler)
