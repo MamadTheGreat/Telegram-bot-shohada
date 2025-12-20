@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 from config import WELCOME_MESSAGE
 from keyboards import get_main_menu_keyboard
@@ -20,7 +20,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"خطا در ثبت اطلاعات کاربر: {e}")
     
-    # ارسال پیام خوش‌آمد با منوی اصلی
+    # پاک کردن کیبورد قبلی (مهم!)
+    await update.message.reply_text(
+        "در حال راه‌اندازی...",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    
+    # ارسال پیام خوش‌آمد با منوی اصلی جدید
     await update.message.reply_text(
         WELCOME_MESSAGE,
         reply_markup=get_main_menu_keyboard()
