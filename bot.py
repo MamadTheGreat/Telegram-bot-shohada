@@ -1,6 +1,7 @@
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 from config import BOT_TOKEN
 from handlers.start_handler import start_command
@@ -102,47 +103,9 @@ def main():
         ]
     )
     
-    # Conversation Handler برای مشاوره پرستاری (فلو سوالات)
-    nursing_conv_handler = ConversationHandler(
-        entry_points=[
-            MessageHandler(filters.Regex('^💬 مشاوره پرستاری \(فلو سوالات\)$'), start_consultation)
-        ],
-        states={
-            SELECTING_DISEASE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, select_disease)
-            ],
-            ANSWERING_QUESTIONS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, answer_question)
-            ]
-        },
-        fallbacks=[
-            MessageHandler(filters.Regex('^🔙 بازگشت'), cancel_consultation),
-            CommandHandler('cancel', cancel_consultation)
-        ]
-    )
-    
-    # Conversation Handler برای مشاوره هوشمند با AI
-    ai_consultation_handler = ConversationHandler(
-        entry_points=[
-            MessageHandler(filters.Regex('^🤖 مشاوره هوشمند \(AI\)$'), start_ai_consultation)
-        ],
-        states={
-            SELECTING_TOPIC: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, select_topic)
-            ],
-            ASKING_QUESTION: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, ai_answer_question)
-            ]
-        },
-        fallbacks=[
-            MessageHandler(filters.Regex('^🔙 بازگشت'), cancel_ai_consultation),
-            CommandHandler('cancel', cancel_ai_consultation)
-        ]
-    )
-    
     # اضافه کردن هندلرها
     application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("reset", start_command))  # reset هم همون start باشه
+    application.add_handler(CommandHandler("reset", start_command))
     
     # Conversation Handler فقط برای ثبت علائم
     application.add_handler(symptoms_conv_handler)
@@ -159,16 +122,15 @@ def main():
         route_blood_pressure
     ))
     
-    # هندلر برای منوی آموزش - بدون فشار خون
+    # هندلر برای منوی آموزش
     application.add_handler(MessageHandler(
         filters.Regex('^(دیابت نوع ۲|بیماری قلبی عروقی)$'),
         handle_disease_selection
     ))
     
-    # هندلر برای بازگشت به منوی اصلی از آموزش
-    async def back_to_main_from_education(update, context):
-        # پاک کردن فلگ ثبت علائم
-        context.user_data.pop('in_symptoms_menu', None)
+    # هندلر برای بازگشت
+    async def handle_back(update: Update, context):
+        context.user_data.clear()
         await update.message.reply_text(
             "🔙 بازگشت به منوی اصلی",
             reply_markup=get_main_menu_keyboard()
@@ -176,7 +138,7 @@ def main():
     
     application.add_handler(MessageHandler(
         filters.Regex('^🔙 بازگشت$'),
-        back_to_main_from_education
+        handle_back
     ))
     
     # شروع ربات
